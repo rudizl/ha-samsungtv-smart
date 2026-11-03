@@ -2576,6 +2576,23 @@ class SamsungTVAsyncArt:
             self._invalidate_artmode_settings_cache()
         return data
 
+    async def get_subscription_user_list(self) -> dict | None:
+        """Art Store subscription state of the signed-in user (raw answer).
+
+        Read-only. Listed in notes/QN55LS03FAFXZA/ART_MODE_DECOMPILED.md
+        ("Store / Subscription Commands"); its response shape is not
+        documented, so it is returned as the TV sends it.
+        """
+        return await self._send_art_request({"request": "get_subscription_user_list"})
+
+    async def get_subscription_list(self) -> dict | None:
+        """Art Store subscription products on offer (raw answer). Read-only."""
+        return await self._send_art_request({"request": "get_subscription_list"})
+
+    async def get_sso_login_status(self) -> dict | None:
+        """Whether a Samsung account is signed in on the TV (raw answer)."""
+        return await self._send_art_request({"request": "get_sso_login_status"})
+
     async def get_device_info(self) -> dict | None:
         """Read the art-app's capability flags.
 

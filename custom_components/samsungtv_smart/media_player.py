@@ -176,6 +176,7 @@ from .const import (
     SERVICE_ART_GET_COLOR_TEMPERATURE,
     SERVICE_ART_GET_CURRENT,
     SERVICE_ART_GET_DEVICE_INFO,
+    SERVICE_ART_GET_SUBSCRIPTION,
     SERVICE_ART_GET_MATTE_LIST,
     SERVICE_ART_GET_PHOTO_FILTER_LIST,
     SERVICE_ART_GET_THUMBNAIL,
@@ -634,6 +635,12 @@ async def async_setup_entry(
         {},
         "async_art_get_device_info",
         supports_response=SupportsResponse.OPTIONAL,
+    )
+    platform.async_register_entity_service(
+        SERVICE_ART_GET_SUBSCRIPTION,
+        {},
+        "async_art_get_subscription",
+        supports_response=SupportsResponse.ONLY,
     )
     platform.async_register_entity_service(
         SERVICE_ART_SET_PICTURE_MODE,
@@ -6928,6 +6935,29 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
         except Exception as ex:
             self._log.error("Error getting art device info: %s", ex)
             return {"error": str(ex)}
+
+    async def async_art_get_subscription(self) -> dict:
+        """Return the TV's Art Store subscription / sign-in answers, raw.
+
+        Read-only: nothing is bought, subscribed or changed. Each request is
+        read on its own so one the firmware refuses does not hide the others;
+        its slot then carries the error. The shapes are not documented, which
+        is why this returns them untouched (a sensor can follow once known).
+        """
+        if not await self._ensure_frame_tv_check():
+            self._log.warning("Frame TV art mode is not supported on this device")
+            return {"error": "Frame TV not supported"}
+        result: dict = {}
+        for key, read in (
+            ("subscription_user", self._art_api.get_subscription_user_list),
+            ("subscription_products", self._art_api.get_subscription_list),
+            ("sso_login", self._art_api.get_sso_login_status),
+        ):
+            try:
+                result[key] = await read()
+            except Exception as ex:  # noqa: BLE001 - report per request
+                result[key] = {"error": str(ex)}
+        return result
 
     async def async_art_set_picture_mode(self, art_picture_mode: int) -> dict:
         """Set the Art Mode picture type (raw platform value)."""
