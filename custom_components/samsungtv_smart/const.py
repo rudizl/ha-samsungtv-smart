@@ -314,6 +314,7 @@ SERVICE_ART_SET_FAVOURITE = "art_set_favourite"
 SERVICE_ART_SET_SLIDESHOW = "art_set_slideshow"
 SERVICE_ART_SET_AUTO_ROTATION = "art_set_auto_rotation"
 SERVICE_ART_GET_DEVICE_INFO = "art_get_device_info"
+SERVICE_ART_GET_SUBSCRIPTION = "art_get_subscription"
 SERVICE_ART_SET_PICTURE_MODE = "art_set_picture_mode"
 SERVICE_ART_RESTART_APP = "art_restart_app"
 

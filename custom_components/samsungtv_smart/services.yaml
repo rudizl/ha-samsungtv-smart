@@ -459,6 +459,17 @@ art_get_device_info:
     entity:
       integration: samsungtv_smart
 
+art_get_subscription:
+  name: Get Art Store Subscription
+  description: >-
+    Read-only: return what the TV reports about the Art Store subscription of
+    the signed-in Samsung account, the subscription products on offer and the
+    Samsung account sign-in state, as the TV sends them. Nothing is bought or
+    changed. Returns response data.
+  target:
+    entity:
+      integration: samsungtv_smart
+
 art_set_picture_mode:
   name: Set Art Picture Mode
   description: >-

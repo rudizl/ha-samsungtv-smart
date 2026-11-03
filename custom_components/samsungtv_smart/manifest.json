@@ -25,9 +25,5 @@
     "casttube>=0.2.1",
     "pillow-heif>=0.13.0"
   ],
-<<<<<<< HEAD
   "version": "8.21.0"
-=======
-  "version": "8.21.0"
->>>>>>> feat/ip-control-expert-settings
 }
