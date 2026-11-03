@@ -76,7 +76,7 @@ from . import (
     start_oauth_reauth,
     update_shared_oauth_token,
 )
-from .api.art import SamsungTVAsyncArt
+from .api.art import SamsungTVAsyncArt, _describe_art_error
 from .api.ipcontrol import (
     PICTURE_MODE_OPTIONS,
     SamsungIPControl,
@@ -6990,9 +6990,13 @@ class SamsungTVDevice(SamsungTVEntity, MediaPlayerEntity):
             ("sso_login", self._art_api.get_sso_login_status),
         ):
             try:
-                result[key] = await read()
+                answer = await read()
             except Exception as ex:  # noqa: BLE001 - report per request
-                result[key] = {"error": str(ex)}
+                answer = {"error": str(ex)}
+            if isinstance(answer, dict) and answer.get("event") == "error":
+                # e.g. TEMPORARILY_UNAVAILABLE (-10), seen outside Art Mode.
+                answer = {"error": _describe_art_error(answer.get("error_code"))}
+            result[key] = answer
         return result
 
     async def async_art_set_picture_mode(self, art_picture_mode: int) -> dict:
