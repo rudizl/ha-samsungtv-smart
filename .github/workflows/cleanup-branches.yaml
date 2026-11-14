@@ -1,0 +1,68 @@
+name: Почистване на клонове
+
+# Deletes branches of this fork whose pull request to TheFab21 is merged or
+# closed. master and branches that never had a PR upstream are left alone,
+# and so is a branch that got new commits after its PR was closed.
+
+on:
+  schedule:
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only list what would be deleted"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cleanup-branches
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      UPSTREAM: TheFab21/ha-samsungtv-smart
+      FORK: ${{ github.repository }}
+      OWNER: ${{ github.repository_owner }}
+      DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      DRY_RUN: ${{ inputs.dry_run || 'false' }}
+    steps:
+      - name: Delete branches whose upstream PR is merged or closed
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$FORK/branches?per_page=100" \
+            --jq '.[] | [.name, .commit.sha] | @tsv' |
+          while IFS=$'\t' read -r branch sha; do
+            if [ "$branch" = "master" ] || [ "$branch" = "$DEFAULT_BRANCH" ]; then
+              continue
+            fi
+            prs=$(gh api -X GET "repos/$UPSTREAM/pulls" \
+              -f state=all -f head="$OWNER:$branch" -f per_page=100 \
+              --jq '[.[] | {number, state, merged_at, sha: .head.sha}]')
+            count=$(jq 'length' <<<"$prs")
+            open=$(jq '[.[] | select(.state == "open")] | length' <<<"$prs")
+            if [ "$count" -eq 0 ]; then
+              echo "keep   $branch (no PR to $UPSTREAM)"
+              continue
+            fi
+            if [ "$open" -gt 0 ]; then
+              echo "keep   $branch (open PR)"
+              continue
+            fi
+            if ! jq -e --arg sha "$sha" 'any(.[]; .sha == $sha)' <<<"$prs" >/dev/null; then
+              echo "keep   $branch (new commits since the PR was closed)"
+              continue
+            fi
+            numbers=$(jq -r '[.[] | "#\(.number) \(if .merged_at then "merged" else "closed" end)"] | join(", ")' <<<"$prs")
+            if [ "$DRY_RUN" = "true" ]; then
+              echo "would delete $branch ($numbers)"
+            else
+              gh api -X DELETE "repos/$FORK/git/refs/heads/$branch" >/dev/null
+              echo "delete $branch ($numbers)"
+            fi
+          done | tee -a "$GITHUB_STEP_SUMMARY"
